@@ -5,21 +5,22 @@ const borderGrid = document.getElementById("bordering-countries");
 const errorMessage = document.getElementById("error-message");
 const spinner = document.getElementById("loading-spinner");
 
+spinner.classList.add("hidden");
+
 async function searchCountry(countryName) {
-try {
-spinner.classList.remove("hidden");
-errorMessage.textContent = "";
-countryInfo.innerHTML = "";
-borderGrid.innerHTML = "";
+    try {
+        spinner.classList.remove("hidden");
+        errorMessage.textContent = "";
+        countryInfo.innerHTML = "";
+        borderGrid.innerHTML = "";
 
-const response = await fetch(`https://restcountries.com/v3.1/name/${countryName}`);
-if (!response.ok) throw new Error("Country not found");
+        const response = await fetch(`https://restcountries.com/v3.1/name/${encodeURIComponent(countryName)}`);
+        if (!response.ok) throw new Error("Country not found");
 
-const data = await response.json();
-const country = data[0];
+        const data = await response.json();
+        const country = data[0];
 
-// Main country info (matches example format)
-document.getElementById("country-info").innerHTML = `
+        document.getElementById("country-info").innerHTML = `
 <h2>${country.name.common}</h2>
 <p><strong>Capital:</strong> ${country.capital ? country.capital[0] : "N/A"}</p>
 <p><strong>Population:</strong> ${country.population.toLocaleString()}</p>
@@ -27,33 +28,35 @@ document.getElementById("country-info").innerHTML = `
 <img src="${country.flags.svg}" alt="${country.name.common} flag" width="100">
 `;
 
-// Border countries (name + flag)
-if (country.borders) {
-for (let code of country.borders) {
-const borderResponse = await fetch(`https://restcountries.com/v3.1/alpha/${code}`);
-const borderData = await borderResponse.json();
-const neighbor = borderData[0];
+        if (country.borders) {
+            for (let code of country.borders) {
+                const borderResponse = await fetch(`https://restcountries.com/v3.1/alpha/${code}`);
+                const borderData = await borderResponse.json();
+                const neighbor = borderData[0];
 
-borderGrid.innerHTML += `
+                borderGrid.innerHTML += `
 <div>
 <p>${neighbor.name.common}</p>
 <img src="${neighbor.flags.svg}" width="60">
 </div>
 `;
-}
+            }
+        }
+
+    } catch (error) {
+        document.getElementById("error-message").textContent = "Country not found.";
+    } finally {
+        spinner.classList.add("hidden");
+    }
 }
 
-} catch (error) {
-document.getElementById("error-message").textContent = "Country not found.";
-} finally {
-spinner.classList.add("hidden");
-}
+function triggerSearch() {
+    const country = countryInput.value.trim();
+    if (country) searchCountry(country);
 }
 
-// Click trigger
-searchBtn.addEventListener("click", () => {
-const country = countryInput.value.trim();
-if (country) {
-searchCountry(country);
-}
+searchBtn.addEventListener("click", triggerSearch);
+
+countryInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") triggerSearch();
 });
